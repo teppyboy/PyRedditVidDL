@@ -1,0 +1,10 @@
+*.json
+Videos/
+ffmpeg/
+ffmpeg_tmp/
+*.zip
+*.spec
+__pycache__/
+build/
+dist/
+venv
