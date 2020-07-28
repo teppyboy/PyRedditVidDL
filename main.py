@@ -145,5 +145,6 @@ if reddit != None:
         else:
             print("Failed to fetch post, is that an invalid post?")
     print(f'Total video downloaded: {", ".join(totalVidName)}')
+    print(f'Downloaded videos are saved into this directory: {currentDir}/Videos/')
 print("Completed work.")
 input("Press enter to exit program...\n")
