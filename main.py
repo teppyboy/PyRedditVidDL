@@ -141,18 +141,14 @@ if reddit != None:
             if video_url != None:
                 patchedPostTitle = post.title.replace('\"', '')
                 vidName = f"{patchedPostTitle} - {post.id}.mp4"
-                totalVidName.append(vidName)
                 print(f"Downloading to {vidName}...")
                 Path(currentDir + "/Videos").mkdir(parents=True, exist_ok=True)
                 ffmpeg = subprocess.call([f'{ffmpeg_path}','-y','-i', f'{video_url}', '-c' ,'copy' ,'-bsf:a', 'aac_adtstoasc', f'{currentDir}/Videos/{vidName}'])
                 if ffmpeg == 0:
                     print(f"Sucessfully download Video into {vidName} inside Videos directory!")
+                    totalVidName.append(vidName)
                 else:
-                    vido = Path(f'{currentDir}/Videos/{vidName}')
-                    if vido.is_file():
-                        print(f"FFMpeg returns 1 but the file exists, maybe the video is downloaded into {vidName} inside Videos directory.")
-                    else:
-                        print("Failed to download video.")
+                    print("Failed to download video.")
             else:
                 print("Post is not a video, nothing to download.")
         else:
