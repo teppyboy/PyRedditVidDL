@@ -9,6 +9,7 @@ isort==4.3.21
 lazy-object-proxy==1.4.3
 mccabe==0.6.1
 pefile==2019.4.18
+pip-autoremove==0.9.1
 praw==7.1.0
 prawcore==1.4.0
 PyInstaller==3.6

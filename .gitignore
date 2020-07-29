@@ -1,4 +1,5 @@
 *.json
+main_protected.py
 Videos/
 ffmpeg/
 ffmpeg_tmp/
@@ -7,4 +8,6 @@ ffmpeg_tmp/
 __pycache__/
 build/
 dist/
-venv
+venv/
+venv_unix/
+*.ini

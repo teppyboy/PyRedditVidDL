@@ -1,5 +1,5 @@
 print("Initalizing...")
-import praw, prawcore, requests, json, subprocess, os, sys, shutil, zipfile, glob
+import praw, prawcore, requests, json, subprocess, os, sys, shutil, zipfile, glob, platform
 from pathlib import Path
 reddit = None
 currentDir = os.getcwd()
@@ -35,65 +35,78 @@ timeout=16
 """)
     print("Created praw.ini.")
 config_file = Path(f'{currentDir}/config.json')
-if config_file.is_file():
-    try:
-        with open(f'{currentDir}/config.json') as f:
-            data = json.load(f)
-            reddit = praw.Reddit(client_id=data["reddit"]["client_id"],client_secret=data["reddit"]["client_secret"],password=data["reddit"]["password"],user_agent="PyRedditVidDL",username=data["reddit"]["username"])
-            # Vaild account check.
-            try:
-                subreddit = reddit.subreddit("all") 
-                subreddit.random()
-            except prawcore.exceptions.ResponseException:
-                print("Error! Not a vaild reddit account, please config the account in config.json")
-                reddit = None
-    except OSError as ex:
-        print(f"An error occured\n{ex}")
-        reddit = None
-else:
+if not config_file.is_file():
+    print("config.json dosen't exists! Configuring config.json")
     config = {}
     config["reddit"] = {}
-    config["reddit"]["client_id"] = ""
-    config["reddit"]["client_secret"] = ""
-    config["reddit"]["username"] = ""
-    config["reddit"]["password"] = ""
+    print("Create an app in https://ssl.reddit.com/prefs/apps/ as script if you haven't then input the answers.")
+    config["reddit"]["client_id"] = input("Type your reddit client id: ")
+    config["reddit"]["client_secret"] = input("Type your reddit client secret: ")
     config_data = json.dumps(config, indent=4, sort_keys=True)
     with open("config.json", "w") as config_json_file:
         config_json_file.write(config_data)
-    print("config.json dosen't exists! I've created a demo file for you.")
-ffmpeg_exe = Path(f'{currentDir}/ffmpeg/ffmpeg.exe')
-if not ffmpeg_exe.is_file():
-    print("FFMpeg not found, downloading...")
-    try:
-        with requests.get("https://ffmpeg.zeranoe.com/builds/win64/shared/ffmpeg-4.3-win64-shared.zip", stream=True) as r:
-            with open(f"{currentDir}/ffmpeg.zip", 'wb') as f:
-                shutil.copyfileobj(r.raw, f)
-            print("Extracting FFMpeg...")
-            Path(currentDir + "/ffmpeg_tmp").mkdir(parents=True, exist_ok=True)
-            with zipfile.ZipFile(f"{currentDir}/ffmpeg.zip", 'r') as zip_ref:
-                zip_ref.extractall(f"{currentDir}/ffmpeg_tmp")
-            for root, dirs, files in os.walk(f"{currentDir}/ffmpeg_tmp"):
-                if "ffmpeg.exe" in files:
-                    bin_path = os.path.dirname(os.path.join(root, "ffmpeg.exe"))
-                    Path(currentDir + "/ffmpeg").mkdir(parents=True, exist_ok=True)
-                    for filename in glob.glob(os.path.join(bin_path, '*.*')):
-                        shutil.copy(filename, f"{currentDir}/ffmpeg")
-                    print("Removing temporary files...")
-                    os.remove("ffmpeg.zip")
-                    shutil.rmtree("ffmpeg_tmp")
-                    print("Done!")
-                    break
-    except (requests.exceptions.RequestException, OSError) as ex:
-        print(f"An error occured, cleaning downloaded files...\n{ex}")
-        os.remove("ffmpeg.zip")
-        shutil.rmtree("ffmpeg_tmp")
-        shutil.rmtree("ffmpeg")
+    print("Created config.json with given config.")
+try:
+    with open(f'{currentDir}/config.json') as f:
+        data = json.load(f)
+        reddit = praw.Reddit(client_id=data["reddit"]["client_id"],client_secret=data["reddit"]["client_secret"],user_agent="PyRedditVidDL")
+        # Vaild account check.
+        try:
+            subreddit = reddit.subreddit("all") 
+            subreddit.random()
+        except prawcore.exceptions.ResponseException:
+            print("Error! Not a vaild reddit account, please config the account in config.json")
+            reddit = None
+except OSError as ex:
+    print(f"An error occured\n{ex}")
+    reddit = None
+   
+ffmpeg_path = None
+if platform.system() == "Windows":
+    ffmpeg_path = f'{currentDir}/ffmpeg/ffmpeg.exe'
+    ffmpeg_exe = Path(ffmpeg_path)
+    if not ffmpeg_exe.is_file():
+        print("FFMpeg not found, downloading...")
+        try:
+            with requests.get("https://ffmpeg.zeranoe.com/builds/win64/shared/ffmpeg-4.3-win64-shared.zip", stream=True) as r:
+                with open(f"{currentDir}/ffmpeg.zip", 'wb') as f:
+                    shutil.copyfileobj(r.raw, f)
+                print("Extracting FFMpeg...")
+                Path(currentDir + "/ffmpeg_tmp").mkdir(parents=True, exist_ok=True)
+                with zipfile.ZipFile(f"{currentDir}/ffmpeg.zip", 'r') as zip_ref:
+                    zip_ref.extractall(f"{currentDir}/ffmpeg_tmp")
+                for root, dirs, files in os.walk(f"{currentDir}/ffmpeg_tmp"):
+                    if "ffmpeg.exe" in files:
+                        bin_path = os.path.dirname(os.path.join(root, "ffmpeg.exe"))
+                        Path(currentDir + "/ffmpeg").mkdir(parents=True, exist_ok=True)
+                        for filename in glob.glob(os.path.join(bin_path, '*.*')):
+                            shutil.copy(filename, f"{currentDir}/ffmpeg")
+                        print("Removing temporary files...")
+                        os.remove("ffmpeg.zip")
+                        shutil.rmtree("ffmpeg_tmp")
+                        print("Done!")
+                        break
+        except (requests.exceptions.RequestException, OSError) as ex:
+            print(f"An error occured, cleaning downloaded files...\n{ex}")
+            os.remove("ffmpeg.zip")
+            shutil.rmtree("ffmpeg_tmp")
+            shutil.rmtree("ffmpeg")
+            reddit = None
+elif platform.system() == "Linux" or platform.system() == "Darwin":
+    ffmpeg_path = shutil.which("ffmpeg")
+    if ffmpeg_path == None:
+        print("FFMpeg is not installed, please install it using your package manager\nEx:\nArch Linux: sudo pacman -S ffmpeg\nmacOS (with Homebrew): brew install ffmpeg")
         reddit = None
+else:
+    print("Unknown platform.")
+    reddit = None
 if reddit != None:
     print("Sucessfully initalized!")
     post_ids = sys.argv[1:]
     if post_ids == None or post_ids == []:
-        post_ids = input("Welcome to PyRedditVidDL, paste the submission URL/ID here (use spaces to fetch video from multiple submission): ").split(" ")
+        post_ids_input = input("Welcome to PyRedditVidDL, paste the submission URL/ID here (use spaces to fetch video from multiple submission) or type 'exit' to exit: ")
+        if post_ids_input != "exit" and post_ids_input != "":
+            post_ids = post_ids_input.split(" ")
     else:
         print("PyRedditVidDL has detected arguments, fetching post from args...")
         post_ids = sys.argv[1:]
@@ -131,20 +144,23 @@ if reddit != None:
                 totalVidName.append(vidName)
                 print(f"Downloading to {vidName}...")
                 Path(currentDir + "/Videos").mkdir(parents=True, exist_ok=True)
-                ffmpeg = subprocess.call(f'{currentDir}/ffmpeg/ffmpeg.exe -y -i "{video_url}" -c copy -bsf:a aac_adtstoasc "{currentDir}/Videos/{vidName}"')
+                ffmpeg = subprocess.call([f'{ffmpeg_path}','-y','-i', f'{video_url}', '-c' ,'copy' ,'-bsf:a', 'aac_adtstoasc', f'{currentDir}/Videos/{vidName}'])
                 if ffmpeg == 0:
                     print(f"Sucessfully download Video into {vidName} inside Videos directory!")
                 else:
                     vido = Path(f'{currentDir}/Videos/{vidName}')
                     if vido.is_file():
-                        print(f"FFMpeg returns 1 but the file is exists, maybe the video is downloaded into {vidName} inside Videos directory.")
+                        print(f"FFMpeg returns 1 but the file exists, maybe the video is downloaded into {vidName} inside Videos directory.")
                     else:
                         print("Failed to download video.")
             else:
                 print("Post is not a video, nothing to download.")
         else:
             print("Failed to fetch post, is that an invalid post?")
-    print(f'Total video downloaded: {", ".join(totalVidName)}')
-    print(f'Downloaded videos are saved into this directory: {currentDir}/Videos/')
+    if ", ".join(totalVidName) == "":
+        print("Nothing downloaded, nothing saved.")
+    else:
+        print(f'Total video downloaded: {", ".join(totalVidName)}')
+        print(f'Downloaded videos are saved into this directory: {currentDir}/Videos/')
 print("Completed work.")
 input("Press enter to exit program...\n")
