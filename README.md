@@ -1,9 +1,9 @@
 # PyRedditVidDL - a simple script for downloading Reddit videos.
 ## Installing
-- Windows:
+- Windows + Linux:
 1. Download the executable file in releases.
 2. Run the file
-- Linux + macOS:
+- macOS (and any other OS that supports Python):
 1. Clone this repo
 2. Execute this command:
 ```bash
