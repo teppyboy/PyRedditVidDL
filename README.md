@@ -3,7 +3,7 @@
 - Windows:
 1. Download the executable file in releases.
 2. Run the file
-- Linux + macOS (Not supported at the moment):
+- Linux + macOS:
 1. Clone this repo
 2. Execute this command:
 ```bash
