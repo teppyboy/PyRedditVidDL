@@ -2,6 +2,7 @@ print("Initalizing...")
 import praw, prawcore, requests, json, subprocess, os, sys, shutil, zipfile, glob, platform
 from pathlib import Path
 reddit = None
+headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.89 Safari/537.36'} #emulating win10 x64 chrome 84
 currentDir = os.getcwd()
 praw_ini_file = Path(f'{currentDir}/praw.ini')
 if not praw_ini_file.is_file():
@@ -124,20 +125,28 @@ if reddit != None:
                 print("[WARN] Input is not a vaild ID.")
                 post = None
         if post != None:
-            post_url_json = "https://www.reddit.com" + post.permalink + ".json"
-            print(f"Post JSON URL = {post_url_json}")
-            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.89 Safari/537.36'} #emulating win10 x64 chrome 84
-            resp = requests.get(post_url_json, headers=headers)
-            post_json_array = json.loads(resp.text) #for some reason reddit json is json array.
             video_url = None
-            for i in post_json_array:
-                for ii in i["data"]["children"]:
-                    try:
-                        print("Video URL: " + ii["data"]["secure_media"]["reddit_video"]["hls_url"])
-                        video_url = ii["data"]["secure_media"]["reddit_video"]["hls_url"]
-                        break
-                    except:
-                        pass #why? bc why not.
+            while video_url == None:
+                post_url_json = "https://www.reddit.com" + post.permalink + ".json"
+                print(f"Post JSON URL = {post_url_json}")
+                resp = requests.get(post_url_json, headers=headers)
+                post_json_array = json.loads(resp.text) #for some reason reddit json is json array.
+                for i in post_json_array:
+                    for ii in i["data"]["children"]:
+                        try:
+                            ii["data"]["crosspost_parent_list"] != None
+                            print("Crosspost detected, getting video from OG post.")
+                            for crosspost in ii["data"]["crosspost_parent_list"]:
+                                print("Video URL: " + crosspost["media"]["reddit_video"]["hls_url"])
+                                video_url = crosspost["media"]["reddit_video"]["hls_url"]
+                                break
+                        except:
+                            try:
+                                print("Video URL: " + ii["data"]["secure_media"]["reddit_video"]["hls_url"])
+                                video_url = ii["data"]["secure_media"]["reddit_video"]["hls_url"]
+                                break
+                            except:
+                                pass #why? bc why not.
             if video_url != None:
                 patchedPostTitle = post.title.replace('\"', '')
                 vidName = f"{patchedPostTitle} - {post.id}.mp4"
