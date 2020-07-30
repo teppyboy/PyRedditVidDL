@@ -126,27 +126,26 @@ if reddit != None:
                 post = None
         if post != None:
             video_url = None
-            while video_url == None:
-                post_url_json = "https://www.reddit.com" + post.permalink + ".json"
-                print(f"Post JSON URL = {post_url_json}")
-                resp = requests.get(post_url_json, headers=headers)
-                post_json_array = json.loads(resp.text) #for some reason reddit json is json array.
-                for i in post_json_array:
-                    for ii in i["data"]["children"]:
+            post_url_json = "https://www.reddit.com" + post.permalink + ".json"
+            print(f"Post JSON URL = {post_url_json}")
+            resp = requests.get(post_url_json, headers=headers)
+            post_json_array = json.loads(resp.text) #for some reason reddit json is json array.
+            for i in post_json_array:
+                for ii in i["data"]["children"]:
+                    try:
+                        ii["data"]["crosspost_parent_list"] != None
+                        print("Crosspost detected, getting video from OG post.")
+                        for crosspost in ii["data"]["crosspost_parent_list"]:
+                            print("Video URL: " + crosspost["media"]["reddit_video"]["hls_url"])
+                            video_url = crosspost["media"]["reddit_video"]["hls_url"]
+                            break
+                    except:
                         try:
-                            ii["data"]["crosspost_parent_list"] != None
-                            print("Crosspost detected, getting video from OG post.")
-                            for crosspost in ii["data"]["crosspost_parent_list"]:
-                                print("Video URL: " + crosspost["media"]["reddit_video"]["hls_url"])
-                                video_url = crosspost["media"]["reddit_video"]["hls_url"]
-                                break
+                            print("Video URL: " + ii["data"]["secure_media"]["reddit_video"]["hls_url"])
+                            video_url = ii["data"]["secure_media"]["reddit_video"]["hls_url"]
+                            break
                         except:
-                            try:
-                                print("Video URL: " + ii["data"]["secure_media"]["reddit_video"]["hls_url"])
-                                video_url = ii["data"]["secure_media"]["reddit_video"]["hls_url"]
-                                break
-                            except:
-                                pass #why? bc why not.
+                            pass #why? bc why not.
             if video_url != None:
                 patchedPostTitle = post.title.replace('\"', '')
                 vidName = f"{patchedPostTitle} - {post.id}.mp4"
